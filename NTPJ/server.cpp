@@ -188,6 +188,7 @@ int main(int argc, char* argv[]) // argv[1] command , argv[2] for port
 		char client_msg[MAXINPUTDATASIZE];
 			//recv client msg
 		recv(new_fd, client_msg, MAXDATASIZE, 0);
+		printf("%s\n",client_msg);
 		recv(new_fd, client_msg, MAXDATASIZE, 0);
 	/*	while(strstr(client_msg,"\\0") == NULL) {
 			recv(new_fd, client_msg_temp, MAXDATASIZE, 0);

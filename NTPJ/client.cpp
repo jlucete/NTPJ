@@ -1,6 +1,6 @@
 /*
-client.c -- a stream socket client demo
-*/
+   client.c -- a stream socket client demo
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,29 +21,29 @@ client.c -- a stream socket client demo
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
 {
-    if (sa->sa_family == AF_INET) {
-        return &(((struct sockaddr_in*)sa)->sin_addr);
-    }
+	if (sa->sa_family == AF_INET) {
+		return &(((struct sockaddr_in*)sa)->sin_addr);
+	}
 
-    return &(((struct sockaddr_in6*)sa)->sin6_addr);
+	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
 int main(int argc, char *argv[])
 {
-    int sockfd, numbytes;  
-    char buf[MAXDATASIZE];
-    struct addrinfo hints, *servinfo, *p;
-    int rv;
-    char s[INET6_ADDRSTRLEN];
+	int sockfd, numbytes;  
+	char buf[MAXDATASIZE];
+	struct addrinfo hints, *servinfo, *p;
+	int rv;
+	char s[INET6_ADDRSTRLEN];
 	char hostname[100];
 	char PORT[5];
 	char method[2];
 	srand(time(NULL));
 
-    if (argc != 7) {
-        fprintf(stderr,"usage: client hostname port method\n");
-        exit(1);
-    }
+	if (argc != 7) {
+		fprintf(stderr,"usage: client hostname port method\n");
+		exit(1);
+	}
 	if ((strcmp("-h",argv[1]) | strcmp("-p",argv[3]) | strcmp("-m",argv[5])) != 0 ) {
 		printf("usage : command error\n");
 		return 1;
@@ -53,41 +53,41 @@ int main(int argc, char *argv[])
 	strcpy(method,argv[6]);
 
 	memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
 
-    if ((rv = getaddrinfo(hostname, PORT, &hints, &servinfo)) != 0) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-        return 1;
-    }
+	if ((rv = getaddrinfo(hostname, PORT, &hints, &servinfo)) != 0) {
+		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+		return 1;
+	}
 
-    // loop through all the results and connect to the first we can
-    for(p = servinfo; p != NULL; p = p->ai_next) {
-        if ((sockfd = socket(p->ai_family, p->ai_socktype,
-                p->ai_protocol)) == -1) {
-            perror("client: socket");
-            continue;
-        }
+	// loop through all the results and connect to the first we can
+	for(p = servinfo; p != NULL; p = p->ai_next) {
+		if ((sockfd = socket(p->ai_family, p->ai_socktype,
+						p->ai_protocol)) == -1) {
+			perror("client: socket");
+			continue;
+		}
 
-        if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-            close(sockfd);
-            perror("client: connect");
-            continue;
-        }
+		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+			close(sockfd);
+			perror("client: connect");
+			continue;
+		}
 
-        break;
-    }
+		break;
+	}
 
-    if (p == NULL) {
-        fprintf(stderr, "client: failed to connect\n");
-        return 2;
-    }
+	if (p == NULL) {
+		fprintf(stderr, "client: failed to connect\n");
+		return 2;
+	}
 
-    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
-            s, sizeof s);
-    printf("client: connecting to %s\n", s);
+	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
+			s, sizeof s);
+	printf("client: connecting to %s\n", s);
 
-    freeaddrinfo(servinfo); // all done with this structure
+	freeaddrinfo(servinfo); // all done with this structure
 
 	//phase 1
 	char op[3], proto[3], checksum[5], trans_id[9];
@@ -106,11 +106,11 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-		//trans_id generater to make checksum max transid = 65533
+	//trans_id generater to make checksum max transid = 65533
 	trans_id_i = rand()/(float)RAND_MAX*65533;
 	sprintf(trans_id, "%08X", trans_id_i);
 
-		//calc checksum
+	//calc checksum
 	proto_i = strtol(proto,NULL,10);
 	checksum_i = 65535-trans_id_i-proto_i;
 	sprintf(checksum, "%04X", checksum_i);
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 	strcat(op, proto);
 	strcat(op, checksum);
 	strcat(op, trans_id);
-	
+
 	if ((send(sockfd, op, 16, 0)) == -1) {
 		perror("send");
 		return -1;
@@ -137,12 +137,15 @@ int main(int argc, char *argv[])
 		char msg[MAXINPUTSIZE+2]; // 2 for terminator
 		char send_msg[MAXDATASIZE];
 		while(scanf("%s",msg) != EOF) {
+			printf("alive\n");
 			strcat(msg,"\\0");
 			//sending
-			printf("%d\n",strlen(msg));
 			for (int i = 0; i < strlen(msg); i = i + MAXDATASIZE) {
 				if (strlen(msg) <= MAXDATASIZE) {
-					send(sockfd, msg, strlen(msg), 0);
+					printf("len: %d\n", strlen(msg));
+					int res = send(sockfd, msg, strlen(msg), MSG_NOSIGNAL);
+					printf("Errno: %d\n", errno);
+					printf("Res: %d\n", res);
 				}
 				else {
 					if ((strlen(msg)-MAXDATASIZE*i)<MAXDATASIZE) {
@@ -152,28 +155,27 @@ int main(int argc, char *argv[])
 						strncpy(send_msg, msg+MAXDATASIZE*i, MAXDATASIZE);
 					}
 					printf("%s\n",send_msg);
-					send(sockfd, send_msg, strlen(send_msg), 0);
-					send(sockfd, send_msg, strlen(send_msg), 0);
+					int res = send(sockfd, send_msg, strlen(send_msg), 0);
+					// send(sockfd, send_msg, strlen(send_msg), 0);
 				}
 			}
 
-/*
+			/*
 			//recving
 			msg[0] = '\0';
 			numbytes = recv(sockfd, msg, MAXDATASIZE-1, 0);
 			msg[numbytes] = '\0';
 			while(strstr(msg, "\\0") != NULL) {
-				numbytes = recv(sockfd, msg, MAXDATASIZE-1,0);
+			numbytes = recv(sockfd, msg, MAXDATASIZE-1,0);
 
 			}
-*/
+			 */
 
-			msg[0] = '\0';
 		}
 
 	}
 
-    close(sockfd);
+	close(sockfd);
 
-    return 0;
+	return 0;
 }

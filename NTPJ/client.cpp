@@ -137,40 +137,29 @@ int main(int argc, char *argv[])
 		char msg[MAXINPUTSIZE+2]; // 2 for terminator
 		char send_msg[MAXDATASIZE];
 		while(scanf("%s",msg) != EOF) {
-			printf("alive\n");
 			strcat(msg,"\\0");
 			//sending
 			for (int i = 0; i < strlen(msg); i = i + MAXDATASIZE) {
 				if (strlen(msg) <= MAXDATASIZE) {
-					printf("len: %d\n", strlen(msg));
-					int res = send(sockfd, msg, strlen(msg), MSG_NOSIGNAL);
-					printf("Errno: %d\n", errno);
-					printf("Res: %d\n", res);
+					send(sockfd, msg, strlen(msg), MSG_NOSIGNAL);
 				}
 				else {
-					if ((strlen(msg)-MAXDATASIZE*i)<MAXDATASIZE) {
-						strncpy(send_msg, msg+MAXDATASIZE*i, strlen(msg)-MAXDATASIZE*i+1);
+					if ((strlen(msg)-i)<MAXDATASIZE) {
+						strncpy(send_msg, msg+i, strlen(msg)-i+1);
 					}
 					else {
-						strncpy(send_msg, msg+MAXDATASIZE*i, MAXDATASIZE);
+						strncpy(send_msg, msg+i, MAXDATASIZE);
 					}
 					printf("%s\n",send_msg);
-					int res = send(sockfd, send_msg, strlen(send_msg), 0);
-					// send(sockfd, send_msg, strlen(send_msg), 0);
+					send(sockfd, send_msg, strlen(send_msg), 0);
 				}
 			}
-
-			/*
-			//recving
-			msg[0] = '\0';
-			numbytes = recv(sockfd, msg, MAXDATASIZE-1, 0);
-			msg[numbytes] = '\0';
-			while(strstr(msg, "\\0") != NULL) {
-			numbytes = recv(sockfd, msg, MAXDATASIZE-1,0);
-
+			memset(msg,'\0',strlen(msg));
+                        while(strstr(msg,"\\0") == NULL) {
+				recv(sockfd, send_msg, MAXDATASIZE, 0);
+				strcat(msg, send_msg);
 			}
-			 */
-
+			printf("client : server sends %s\n",msg);
 		}
 
 	}

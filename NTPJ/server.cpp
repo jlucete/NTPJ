@@ -40,6 +40,28 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
+// redundancy remover of string
+char* redundancy_remove(char* strin)
+{
+	int len = strlen(strin), cnt=0;
+	char strout[len],temp[2];
+	strout[0] = '\0';
+	temp[1] = '\0';
+	for(int i = 0 ; i < len-2; i++) {
+		temp[0] = strin[i];
+		if(!strstr(strout,temp)) {
+			strout[cnt] = temp[0];
+			cnt++;
+		}
+	}
+	strout[cnt] = '\0';
+	memset(strin,'\0',strlen(strin));
+	strcpy(strin,strout);
+	return strin;
+}
+
+
+
 int main(int argc, char* argv[]) // argv[1] command , argv[2] for port
 {
     int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
@@ -187,18 +209,38 @@ int main(int argc, char* argv[]) // argv[1] command , argv[2] for port
 		char client_msg_temp[MAXDATASIZE];
 		char client_msg[MAXINPUTDATASIZE];
 			//recv client msg
-		recv(new_fd, client_msg, MAXDATASIZE, 0);
-		printf("%s\n",client_msg);
-		recv(new_fd, client_msg, MAXDATASIZE, 0);
-	/*	while(strstr(client_msg,"\\0") == NULL) {
-			recv(new_fd, client_msg_temp, MAXDATASIZE, 0);
-			strcat(client_msg, client_msg_temp);
-		}*/
-		printf("server : client sends %s\n",client_msg);
-
-            close(new_fd);
-            exit(0);
-        }
+		while(1) { 
+			if(recv(new_fd, client_msg, MAXDATASIZE, 0) == 0) break; // socket closed
+			while(strstr(client_msg,"\\0") == NULL) {
+				recv(new_fd, client_msg_temp, MAXDATASIZE, 0);
+				strcat(client_msg, client_msg_temp);
+			}
+			printf("server : %s sends %s\n",s,client_msg);
+			redundancy_remove(client_msg);
+			printf("after client_msg : %s\n",client_msg);
+			printf("len : %d\n",strlen(client_msg));
+                        strcat(client_msg,"\\0");
+                        //sending
+                        for (int i = 0; i < strlen(client_msg); i = i + MAXDATASIZE) {
+                                if (strlen(client_msg) <= MAXDATASIZE) {
+                                        send(new_fd, client_msg, strlen(client_msg), MSG_NOSIGNAL);
+                                }
+                                else {
+                                        if ((strlen(client_msg)-i)<MAXDATASIZE) {
+                                                strncpy(client_msg_temp, client_msg+i, strlen(client_msg)-i+1);
+                                        }
+                                        else {
+                                                strncpy(client_msg_temp, client_msg+i, MAXDATASIZE);
+                                        }
+                                        send(new_fd, client_msg_temp, strlen(client_msg_temp), 0);
+                                }
+                        }
+			memset(client_msg,'\0',sizeof client_msg);
+		}
+		printf("server: lost connection to %s\n",s);
+		close(new_fd);
+		exit(0);
+	}
         close(new_fd);  // parent doesn't need this
     }
 

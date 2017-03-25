@@ -16,8 +16,6 @@ Server.c -- a stream socket server demo
 #include <signal.h>
 
 #define BACKLOG 10     // how many pending connections queue will hold
-#define MAXDATASIZE 10 // max number of bytes of msg from client at one
-#define MAXINPUTDATASIZE 1000000 // max bytes of total msg
 
 void sigchld_handler(int s)
 {
@@ -163,37 +161,13 @@ int main(int argc, char* argv[]) // argv[1] command , argv[2] for port
 		checksum_i = strtol(checksum,NULL,16);
 		trans_id_i = strtol(trans_id_check,NULL,16);
 
-		//recv msg checksum check
+		//checksum
 		if ((op_proto_i+checksum_i+trans_id_i) != 0xffff) {
-			printf("usage : checksum error\n");
+			printf("usage : checksum error");
 			exit(1);
 		}
 		
-		//calc send msg checksum
-		strcpy(op,"01");
-		sprintf(checksum,"%X",checksum_i-256);		
 
-		//send to client
-		strcat(op,proto);
-		strcat(op,checksum);
-		strcat(op,trans_id);
-		op[16] = '\0';
-		if (send(new_fd, op, 16, 0) == -1) {
-			perror("send");
-			exit(1);
-		}
-
-		//phase 2-1
-		char client_msg_temp[MAXDATASIZE];
-		char client_msg[MAXINPUTDATASIZE];
-			//recv client msg
-		recv(new_fd, client_msg, MAXDATASIZE, 0);
-		recv(new_fd, client_msg, MAXDATASIZE, 0);
-	/*	while(strstr(client_msg,"\\0") == NULL) {
-			recv(new_fd, client_msg_temp, MAXDATASIZE, 0);
-			strcat(client_msg, client_msg_temp);
-		}*/
-		printf("server : client sends %s\n",client_msg);
 
             close(new_fd);
             exit(0);

@@ -15,9 +15,9 @@ Server.c -- a stream socket server demo
 #include <sys/wait.h>
 #include <signal.h>
 
+#define PORT "3490"  // the port users will be connecting to
+
 #define BACKLOG 10     // how many pending connections queue will hold
-#define MAXDATASIZE 10 // max number of bytes of msg from client at one
-#define MAXINPUTDATASIZE 1000000 // max bytes of total msg
 
 void sigchld_handler(int s)
 {
@@ -40,7 +40,7 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int main(int argc, char* argv[]) // argv[1] command , argv[2] for port
+int main(void)
 {
     int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
     struct addrinfo hints, *servinfo, *p;
@@ -50,20 +50,6 @@ int main(int argc, char* argv[]) // argv[1] command , argv[2] for port
     int yes=1;
     char s[INET6_ADDRSTRLEN];
     int rv;
-	char PORT[5];
-
-	//dealing with argv
-	if (argc != 3) {
-		printf("usage : port error\n");
-		return 1;
-	}
-	if (strcmp("-p",argv[1]) != 0) {
-		printf("usage : command error\n");
-		return 1;
-	}
-	strcpy(PORT,argv[2]);
-	printf("%s\n",PORT);
-
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -135,66 +121,8 @@ int main(int argc, char* argv[]) // argv[1] command , argv[2] for port
 
         if (!fork()) { // this is the child process
             close(sockfd); // child doesn't need the listener
-		//phase 1
-		char negotiation[17];
-		char  op[3], proto[3], checksum[5], trans_id[9],trans_id_check[5],op_proto[5];
-		int op_proto_i,checksum_i,trans_id_i;
-		int  numbytes;
-		if ((numbytes = recv(new_fd, negotiation, 16, 0)) == -1) {
-			perror("recv");
-			exit(1);
-		}
-		negotiation[numbytes] = '\0';
-		op[2] = '\0';
-		proto[2] = '\0';
-		checksum[4] = '\0';
-		trans_id[8] = '\0';
-		op_proto[4] = '\0';
-		trans_id_check[4] = '\0';
-		strncpy(op,negotiation,2);
-		strncpy(proto,negotiation+2,2);
-		strncpy(checksum,negotiation+4,4);
-		strncpy(trans_id,negotiation+8,8);
-		strncpy(op_proto,negotiation,4);
-		strncpy(trans_id_check,negotiation+12,4);
-
-		//convert hex string to int
-		op_proto_i = strtol(op_proto,NULL,16);
-		checksum_i = strtol(checksum,NULL,16);
-		trans_id_i = strtol(trans_id_check,NULL,16);
-
-		//recv msg checksum check
-		if ((op_proto_i+checksum_i+trans_id_i) != 0xffff) {
-			printf("usage : checksum error\n");
-			exit(1);
-		}
-		
-		//calc send msg checksum
-		strcpy(op,"01");
-		sprintf(checksum,"%X",checksum_i-256);		
-
-		//send to client
-		strcat(op,proto);
-		strcat(op,checksum);
-		strcat(op,trans_id);
-		op[16] = '\0';
-		if (send(new_fd, op, 16, 0) == -1) {
-			perror("send");
-			exit(1);
-		}
-
-		//phase 2-1
-		char client_msg_temp[MAXDATASIZE];
-		char client_msg[MAXINPUTDATASIZE];
-			//recv client msg
-		recv(new_fd, client_msg, MAXDATASIZE, 0);
-		recv(new_fd, client_msg, MAXDATASIZE, 0);
-	/*	while(strstr(client_msg,"\\0") == NULL) {
-			recv(new_fd, client_msg_temp, MAXDATASIZE, 0);
-			strcat(client_msg, client_msg_temp);
-		}*/
-		printf("server : client sends %s\n",client_msg);
-
+            if (send(new_fd, "Hello, world!", 13, 0) == -1)
+                perror("send");
             close(new_fd);
             exit(0);
         }
